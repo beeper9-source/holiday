@@ -360,8 +360,8 @@
                 <div class="export-import">
                     <h3>📁 데이터 관리</h3>
                     <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-                        데이터는 로컬 스토리지와 holiday_data.json 파일에 모두 저장됩니다.<br>
-                        웹 서버 버전과 동일한 파일을 사용하여 데이터를 공유할 수 있습니다.
+                        데이터는 로컬 스토리지에 저장됩니다.<br>
+                        필요시 수동으로 JSON 파일을 다운로드하거나 서버에 동기화할 수 있습니다.
                     </p>
                     
                     <div style="margin-bottom: 15px;">
@@ -422,13 +422,10 @@
             return data ? JSON.parse(data) : {};
         }
         
-        // 데이터 저장 (로컬 스토리지와 JSON 파일 모두)
+        // 데이터 저장 (로컬 스토리지만)
         function saveData(data) {
             // 로컬 스토리지에 저장
             localStorage.setItem('holidayData', JSON.stringify(data));
-            
-            // JSON 파일로도 자동 저장
-            saveToJsonFile(data);
         }
         
         // JSON 파일로 저장 (웹 서버 버전과 동일한 파일명 사용)
