@@ -718,11 +718,32 @@
                 const completed = plans.filter(p => p.completed).length;
                 const achievements = data.achievements || [];
                 const rating = data.rating || 0;
+                const memo = data.memo || '';
                 
                 const dateStr = new Date(date).toLocaleDateString('ko-KR', {
                     month: 'numeric',
                     day: 'numeric'
                 });
+                
+                // 계획 목록 생성
+                const plansList = plans.length > 0 ? 
+                    plans.map(plan => `<div style="margin: 3px 0; padding: 5px; background: ${plan.completed ? '#e8f5e8' : '#f0f0f0'}; border-radius: 5px; font-size: 12px;">
+                        ${plan.completed ? '✅' : '⏳'} ${plan.content}
+                    </div>`).join('') : 
+                    '<div style="color: #999; font-size: 12px; margin: 5px 0;">계획 없음</div>';
+                
+                // 실적 목록 생성
+                const achievementsList = achievements.length > 0 ? 
+                    achievements.map(achievement => `<div style="margin: 3px 0; padding: 5px; background: #fff3cd; border-radius: 5px; font-size: 12px;">
+                        🏆 ${achievement.content}
+                    </div>`).join('') : 
+                    '<div style="color: #999; font-size: 12px; margin: 5px 0;">실적 없음</div>';
+                
+                // 메모 표시
+                const memoDisplay = memo ? 
+                    `<div style="margin: 5px 0; padding: 8px; background: #e3f2fd; border-radius: 5px; font-size: 12px; color: #1976d2;">
+                        📝 ${memo}
+                    </div>` : '';
                 
                 return `
                     <div class="overview-item">
@@ -730,6 +751,18 @@
                         <div class="overview-stats">
                             계획 ${plans.length}개 (완료 ${completed}개), 실적 ${achievements.length}개, 평가 ${rating}/10점
                         </div>
+                        
+                        <div style="margin-top: 10px;">
+                            <div style="font-weight: bold; color: #667eea; margin-bottom: 5px; font-size: 13px;">📝 계획</div>
+                            ${plansList}
+                        </div>
+                        
+                        <div style="margin-top: 10px;">
+                            <div style="font-weight: bold; color: #667eea; margin-bottom: 5px; font-size: 13px;">🏆 실적</div>
+                            ${achievementsList}
+                        </div>
+                        
+                        ${memoDisplay}
                     </div>
                 `;
             }).join('');
