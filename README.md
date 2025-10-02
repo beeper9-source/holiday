@@ -30,25 +30,34 @@
 
 ## 🛠️ 설치 및 실행
 
-### 1. 의존성 설치
+### 🚀 방법 1: 독립 실행형 (추천)
+**설치 불필요, 바로 사용 가능**
+```bash
+# holiday_planner_standalone.html 파일을 더블클릭하거나 브라우저로 열기
+```
+
+### 🌐 방법 2: 웹 서버 버전
+**모바일에서 네트워크로 접속 가능**
+
+1. **의존성 설치**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 모바일 웹 앱 실행
+2. **웹 서버 실행**
 ```bash
 python holiday_planner_mobile.py
 ```
 
-### 3. 모바일에서 접속
+3. **접속**
 - **PC에서**: `http://localhost:5000`
 - **모바일에서**: `http://[PC의 IP주소]:5000`
   - 예: `http://192.168.1.100:5000`
 
-### 4. 모바일 접속 방법
-1. PC와 모바일이 같은 Wi-Fi에 연결되어 있는지 확인
-2. PC에서 `ipconfig` 명령어로 IP 주소 확인
-3. 모바일 브라우저에서 `http://[IP주소]:5000` 접속
+4. **모바일 접속 방법**
+   - PC와 모바일이 같은 Wi-Fi에 연결되어 있는지 확인
+   - PC에서 `ipconfig` 명령어로 IP 주소 확인
+   - 모바일 브라우저에서 `http://[IP주소]:5000` 접속
 
 ## 📱 모바일 최적화 기능
 
@@ -62,20 +71,24 @@ python holiday_planner_mobile.py
 
 ```
 holiday/
-├── holiday_planner_mobile.py    # 모바일 웹 앱 (Flask)
-├── holiday_planner_simple.py    # 데스크톱 앱 (tkinter)
-├── holiday_planner_desktop.py   # matplotlib 포함 데스크톱 앱
-├── holiday_planner.py           # Streamlit 웹 앱 (원본)
-├── templates/
-│   └── index.html              # 모바일 웹 UI
-├── requirements.txt            # 필요한 패키지 목록
-├── README.md                  # 사용법 안내
-└── holiday_data.json          # 데이터 저장 파일 (자동 생성)
+├── holiday_planner_standalone.html  # 독립 실행형 앱 (추천)
+├── holiday_planner_mobile.py        # 웹 서버 버전 (Flask)
+├── requirements.txt                 # 웹 서버용 의존성
+├── README.md                       # 사용법 안내
+└── holiday_data.json               # 데이터 저장 파일 (자동 생성)
 ```
 
-## 💾 데이터 저장
+## 💾 데이터 저장 및 연계
 
-모든 데이터는 `holiday_data.json` 파일에 자동으로 저장됩니다. 이 파일을 백업하면 데이터를 보존할 수 있습니다.
+### 📁 통합 데이터 관리
+- **공통 파일**: 두 버전 모두 `holiday_data.json` 파일 사용
+- **자동 동기화**: 데이터 변경 시 자동으로 파일에 저장
+- **버전 간 호환**: 독립 실행형과 웹 서버 버전 간 데이터 공유 가능
+
+### 🔄 데이터 연계 방법
+1. **독립 실행형 → 웹 서버**: JSON 파일 다운로드 후 웹 서버 폴더에 복사
+2. **웹 서버 → 독립 실행형**: 웹 서버의 JSON 파일을 독립 실행형에서 불러오기
+3. **자동 감지**: 웹 서버 버전은 시작 시 기존 JSON 파일을 자동 로드
 
 ## 🎯 사용 팁
 

@@ -11,19 +11,26 @@ holiday_end = datetime(2025, 10, 12)
 holiday_days = [(holiday_start + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(11)]
 
 def load_data():
-    """데이터 로드"""
+    """데이터 로드 (독립 실행형 버전과 호환)"""
     if os.path.exists('holiday_data.json'):
         try:
             with open('holiday_data.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
+                data = json.load(f)
+                print(f"기존 holiday_data.json 파일을 로드했습니다. ({len(data)}개 날짜 데이터)")
+                return data
+        except Exception as e:
+            print(f"JSON 파일 로드 중 오류: {e}")
             return {}
     return {}
 
 def save_data(data):
-    """데이터 저장"""
-    with open('holiday_data.json', 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """데이터 저장 (독립 실행형 버전과 호환)"""
+    try:
+        with open('holiday_data.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"데이터가 holiday_data.json 파일에 저장되었습니다. ({len(data)}개 날짜 데이터)")
+    except Exception as e:
+        print(f"JSON 파일 저장 중 오류: {e}")
 
 @app.route('/')
 def index():
@@ -163,6 +170,30 @@ def get_stats():
         'total_achievements': total_achievements,
         'avg_rating': avg_rating
     })
+
+@app.route('/api/sync', methods=['POST'])
+def sync_data():
+    """독립 실행형 버전과 데이터 동기화"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'message': '데이터가 전송되지 않았습니다.'})
+        
+        # 기존 데이터와 병합 (전송된 데이터 우선)
+        existing_data = load_data()
+        merged_data = {**existing_data, **data}
+        
+        # 저장
+        save_data(merged_data)
+        
+        return jsonify({
+            'success': True, 
+            'message': f'데이터가 성공적으로 동기화되었습니다. ({len(data)}개 날짜 데이터)',
+            'synced_dates': list(data.keys())
+        })
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'동기화 중 오류가 발생했습니다: {str(e)}'})
 
 if __name__ == '__main__':
     # templates 폴더 생성

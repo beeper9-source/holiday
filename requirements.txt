@@ -1,1 +1,4 @@
+# 웹 서버 버전용 의존성 (holiday_planner_mobile.py)
 flask==2.3.3
+
+# 독립 실행형 버전 (holiday_planner_standalone.html)은 의존성 불필요

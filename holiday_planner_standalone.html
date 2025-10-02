@@ -251,6 +251,22 @@
             opacity: 0.5;
         }
         
+        .export-import {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .export-import h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        
+        .export-import button {
+            margin: 5px;
+        }
+        
         @media (max-width: 480px) {
             .container {
                 margin: 5px;
@@ -285,14 +301,17 @@
         <div class="content">
             <div class="date-selector">
                 <select id="dateSelect">
-                    {% for day in holiday_days %}
-                    {% set day_num = loop.index %}
-                    {% set day_obj = day.split('-') %}
-                    {% set month = day_obj[1] %}
-                    {% set date = day_obj[2] %}
-                    {% set weekday = ['월', '화', '수', '목', '금', '토', '일'][(loop.index0 + 3) % 7] %}
-                    <option value="{{ day }}">No.{{ day_num }} {{ month }}월 {{ date }}일 {{ weekday }}요일</option>
-                    {% endfor %}
+                    <option value="2025-10-02">No.1 10월 2일 목요일</option>
+                    <option value="2025-10-03">No.2 10월 3일 금요일</option>
+                    <option value="2025-10-04">No.3 10월 4일 토요일</option>
+                    <option value="2025-10-05">No.4 10월 5일 일요일</option>
+                    <option value="2025-10-06">No.5 10월 6일 월요일</option>
+                    <option value="2025-10-07">No.6 10월 7일 화요일</option>
+                    <option value="2025-10-08">No.7 10월 8일 수요일</option>
+                    <option value="2025-10-09">No.8 10월 9일 목요일</option>
+                    <option value="2025-10-10">No.9 10월 10일 금요일</option>
+                    <option value="2025-10-11">No.10 10월 11일 토요일</option>
+                    <option value="2025-10-12">No.11 10월 12일 일요일</option>
                 </select>
             </div>
             
@@ -337,6 +356,29 @@
             <div id="overview" class="tab-content">
                 <div class="stats-grid" id="statsGrid"></div>
                 <div id="overviewList"></div>
+                
+                <div class="export-import">
+                    <h3>📁 데이터 관리</h3>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                        데이터는 로컬 스토리지와 holiday_data.json 파일에 모두 저장됩니다.<br>
+                        웹 서버 버전과 동일한 파일을 사용하여 데이터를 공유할 수 있습니다.
+                    </p>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="color: #667eea; margin-bottom: 10px;">🔄 서버 연계</h4>
+                        <input type="text" id="serverUrl" placeholder="서버 주소 (예: http://192.168.1.100:5000)" 
+                               style="width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #ddd; border-radius: 5px;">
+                        <button class="btn btn-small" onclick="syncToServer()">서버에 동기화</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="color: #667eea; margin-bottom: 10px;">💾 로컬 관리</h4>
+                        <button class="btn btn-small" onclick="exportData()">JSON 파일 다운로드</button>
+                        <button class="btn btn-small" onclick="loadFromJsonFile()">JSON 파일 불러오기</button>
+                        <button class="btn btn-small" onclick="saveToJsonFile(loadData())">수동 저장</button>
+                        <button class="btn btn-small btn-danger" onclick="clearAllData()">모든 데이터 삭제</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -345,14 +387,102 @@
         let currentDate = document.getElementById('dateSelect').value;
         let currentData = {};
         
+        // 추석연휴 날짜 목록
+        const holidayDays = [
+            '2025-10-02', '2025-10-03', '2025-10-04', '2025-10-05', '2025-10-06',
+            '2025-10-07', '2025-10-08', '2025-10-09', '2025-10-10', '2025-10-11', '2025-10-12'
+        ];
+        
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            // 기존 holiday_data.json 파일이 있는지 확인하고 로드
+            checkAndLoadExistingData();
+            
             loadDayData();
             document.getElementById('dateSelect').addEventListener('change', function() {
                 currentDate = this.value;
                 loadDayData();
             });
         });
+        
+        // 기존 데이터 확인 및 로드
+        function checkAndLoadExistingData() {
+            // 로컬 스토리지에 데이터가 없으면 기존 JSON 파일 로드 시도
+            if (!localStorage.getItem('holidayData')) {
+                // 사용자에게 기존 파일 로드 여부 확인
+                if (confirm('기존 holiday_data.json 파일을 불러오시겠습니까?')) {
+                    loadFromJsonFile();
+                }
+            }
+        }
+        
+        // 데이터 로드 (로컬 스토리지 우선, 없으면 빈 객체)
+        function loadData() {
+            const data = localStorage.getItem('holidayData');
+            return data ? JSON.parse(data) : {};
+        }
+        
+        // 데이터 저장 (로컬 스토리지와 JSON 파일 모두)
+        function saveData(data) {
+            // 로컬 스토리지에 저장
+            localStorage.setItem('holidayData', JSON.stringify(data));
+            
+            // JSON 파일로도 자동 저장
+            saveToJsonFile(data);
+        }
+        
+        // JSON 파일로 저장 (웹 서버 버전과 동일한 파일명 사용)
+        function saveToJsonFile(data) {
+            try {
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                
+                // 숨겨진 링크를 생성하여 자동 다운로드
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'holiday_data.json';  // 웹 서버 버전과 동일한 파일명
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                URL.revokeObjectURL(url);
+                console.log('데이터가 holiday_data.json 파일로 저장되었습니다. (웹 서버 버전과 호환)');
+            } catch (error) {
+                console.error('JSON 파일 저장 중 오류:', error);
+            }
+        }
+        
+        // JSON 파일에서 데이터 로드
+        function loadFromJsonFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.style.display = 'none';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        localStorage.setItem('holidayData', JSON.stringify(data));
+                        loadDayData();
+                        alert('JSON 파일에서 데이터를 성공적으로 로드했습니다!');
+                    } catch (error) {
+                        alert('파일 형식이 올바르지 않습니다.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            document.body.appendChild(input);
+            input.click();
+            document.body.removeChild(input);
+        }
         
         // 탭 전환
         function showTab(tabName) {
@@ -372,21 +502,29 @@
         }
         
         // 날짜별 데이터 로드
-        async function loadDayData() {
-            try {
-                const response = await fetch(`/api/data/${currentDate}`);
-                currentData = await response.json();
-                updatePlansList();
-                updateAchievementsList();
-                updateRatingDisplay();
-                document.getElementById('memoInput').value = currentData.memo || '';
-            } catch (error) {
-                console.error('데이터 로드 오류:', error);
+        function loadDayData() {
+            const allData = loadData();
+            currentData = allData[currentDate] || {
+                plans: [],
+                achievements: [],
+                rating: 0,
+                memo: ''
+            };
+            
+            // 데이터가 없으면 저장
+            if (!allData[currentDate]) {
+                allData[currentDate] = currentData;
+                saveData(allData);
             }
+            
+            updatePlansList();
+            updateAchievementsList();
+            updateRatingDisplay();
+            document.getElementById('memoInput').value = currentData.memo || '';
         }
         
         // 계획 추가
-        async function addPlan() {
+        function addPlan() {
             const input = document.getElementById('planInput');
             const content = input.value.trim();
             
@@ -395,29 +533,20 @@
                 return;
             }
             
-            try {
-                const response = await fetch('/api/plan', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        date: currentDate,
-                        content: content
-                    })
-                });
-                
-                if (response.ok) {
-                    input.value = '';
-                    loadDayData();
-                }
-            } catch (error) {
-                console.error('계획 추가 오류:', error);
-            }
+            const allData = loadData();
+            allData[currentDate].plans.push({
+                content: content,
+                completed: false,
+                created_at: new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})
+            });
+            
+            saveData(allData);
+            input.value = '';
+            loadDayData();
         }
         
         // 실적 추가
-        async function addAchievement() {
+        function addAchievement() {
             const input = document.getElementById('achievementInput');
             const content = input.value.trim();
             
@@ -426,122 +555,61 @@
                 return;
             }
             
-            try {
-                const response = await fetch('/api/achievement', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        date: currentDate,
-                        content: content
-                    })
-                });
-                
-                if (response.ok) {
-                    input.value = '';
-                    loadDayData();
-                }
-            } catch (error) {
-                console.error('실적 추가 오류:', error);
-            }
+            const allData = loadData();
+            allData[currentDate].achievements.push({
+                content: content,
+                created_at: new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})
+            });
+            
+            saveData(allData);
+            input.value = '';
+            loadDayData();
         }
         
         // 계획 완료 처리
-        async function completePlan(index) {
-            try {
-                const response = await fetch(`/api/plan/${currentDate}/${index}/complete`, {
-                    method: 'POST'
-                });
-                
-                if (response.ok) {
-                    loadDayData();
-                }
-            } catch (error) {
-                console.error('계획 완료 오류:', error);
-            }
+        function completePlan(index) {
+            const allData = loadData();
+            allData[currentDate].plans[index].completed = true;
+            saveData(allData);
+            loadDayData();
         }
         
         // 계획 삭제
-        async function deletePlan(index) {
+        function deletePlan(index) {
             if (confirm('이 계획을 삭제하시겠습니까?')) {
-                try {
-                    const response = await fetch(`/api/plan/${currentDate}/${index}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (response.ok) {
-                        loadDayData();
-                    }
-                } catch (error) {
-                    console.error('계획 삭제 오류:', error);
-                }
+                const allData = loadData();
+                allData[currentDate].plans.splice(index, 1);
+                saveData(allData);
+                loadDayData();
             }
         }
         
         // 실적 삭제
-        async function deleteAchievement(index) {
+        function deleteAchievement(index) {
             if (confirm('이 실적을 삭제하시겠습니까?')) {
-                try {
-                    const response = await fetch(`/api/achievement/${currentDate}/${index}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    if (response.ok) {
-                        loadDayData();
-                    }
-                } catch (error) {
-                    console.error('실적 삭제 오류:', error);
-                }
+                const allData = loadData();
+                allData[currentDate].achievements.splice(index, 1);
+                saveData(allData);
+                loadDayData();
             }
         }
         
         // 평가 저장
-        async function saveRating() {
+        function saveRating() {
             const rating = document.getElementById('ratingSlider').value;
-            
-            try {
-                const response = await fetch('/api/rating', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        date: currentDate,
-                        rating: parseInt(rating)
-                    })
-                });
-                
-                if (response.ok) {
-                    alert(`평가가 저장되었습니다! (${rating}/10점)`);
-                }
-            } catch (error) {
-                console.error('평가 저장 오류:', error);
-            }
+            const allData = loadData();
+            allData[currentDate].rating = parseInt(rating);
+            saveData(allData);
+            alert(`평가가 저장되었습니다! (${rating}/10점)`);
         }
         
         // 메모 저장
-        async function saveMemo() {
+        function saveMemo() {
             const memo = document.getElementById('memoInput').value;
-            
-            try {
-                const response = await fetch('/api/memo', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        date: currentDate,
-                        memo: memo
-                    })
-                });
-                
-                if (response.ok) {
-                    alert('메모가 저장되었습니다!');
-                }
-            } catch (error) {
-                console.error('메모 저장 오류:', error);
-            }
+            const allData = loadData();
+            allData[currentDate].memo = memo;
+            saveData(allData);
+            alert('메모가 저장되었습니다!');
         }
         
         // 평가 표시 업데이트
@@ -598,67 +666,131 @@
         }
         
         // 통계 로드
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/stats');
-                const stats = await response.json();
-                
-                const container = document.getElementById('statsGrid');
-                container.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-number">${stats.total_plans}</div>
-                        <div class="stat-label">총 계획 수</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${stats.completion_rate.toFixed(1)}%</div>
-                        <div class="stat-label">완료율</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${stats.total_achievements}</div>
-                        <div class="stat-label">총 실적 수</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${stats.avg_rating.toFixed(1)}</div>
-                        <div class="stat-label">평균 평가</div>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('통계 로드 오류:', error);
-            }
+        function loadStats() {
+            const allData = loadData();
+            
+            let totalPlans = 0;
+            let completedPlans = 0;
+            let totalAchievements = 0;
+            let totalRating = 0;
+            let daysWithData = 0;
+            
+            holidayDays.forEach(date => {
+                const data = allData[date];
+                if (data) {
+                    totalPlans += data.plans.length;
+                    completedPlans += data.plans.filter(p => p.completed).length;
+                    totalAchievements += data.achievements.length;
+                    totalRating += data.rating;
+                    daysWithData++;
+                }
+            });
+            
+            const completionRate = totalPlans > 0 ? (completedPlans / totalPlans) * 100 : 0;
+            const avgRating = daysWithData > 0 ? totalRating / daysWithData : 0;
+            
+            const container = document.getElementById('statsGrid');
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${totalPlans}</div>
+                    <div class="stat-label">총 계획 수</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${completionRate.toFixed(1)}%</div>
+                    <div class="stat-label">완료율</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalAchievements}</div>
+                    <div class="stat-label">총 실적 수</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${avgRating.toFixed(1)}</div>
+                    <div class="stat-label">평균 평가</div>
+                </div>
+            `;
         }
         
         // 전체 현황 로드
-        async function loadOverview() {
-            try {
-                const response = await fetch('/api/data');
-                const allData = await response.json();
+        function loadOverview() {
+            const allData = loadData();
+            const container = document.getElementById('overviewList');
+            
+            container.innerHTML = holidayDays.map(date => {
+                const data = allData[date] || {plans: [], achievements: [], rating: 0};
+                const plans = data.plans || [];
+                const completed = plans.filter(p => p.completed).length;
+                const achievements = data.achievements || [];
+                const rating = data.rating || 0;
                 
-                const container = document.getElementById('overviewList');
-                const holidayDays = {{ holiday_days | tojson }};
+                const dateStr = new Date(date).toLocaleDateString('ko-KR', {
+                    month: 'numeric',
+                    day: 'numeric'
+                });
                 
-                container.innerHTML = holidayDays.map(date => {
-                    const data = allData[date] || {plans: [], achievements: [], rating: 0};
-                    const plans = data.plans || [];
-                    const completed = plans.filter(p => p.completed).length;
-                    const achievements = data.achievements || [];
-                    const rating = data.rating || 0;
-                    
-                    const dateStr = new Date(date).toLocaleDateString('ko-KR', {
-                        month: 'numeric',
-                        day: 'numeric'
-                    });
-                    
-                    return `
-                        <div class="overview-item">
-                            <div class="overview-date">${dateStr}</div>
-                            <div class="overview-stats">
-                                계획 ${plans.length}개 (완료 ${completed}개), 실적 ${achievements.length}개, 평가 ${rating}/10점
-                            </div>
+                return `
+                    <div class="overview-item">
+                        <div class="overview-date">${dateStr}</div>
+                        <div class="overview-stats">
+                            계획 ${plans.length}개 (완료 ${completed}개), 실적 ${achievements.length}개, 평가 ${rating}/10점
                         </div>
-                    `;
-                }).join('');
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 데이터 내보내기 (JSON 파일 다운로드)
+        function exportData() {
+            const data = loadData();
+            saveToJsonFile(data);
+            alert('holiday_data.json 파일이 다운로드되었습니다!');
+        }
+        
+        // 모든 데이터 삭제
+        function clearAllData() {
+            if (confirm('모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                localStorage.removeItem('holidayData');
+                loadDayData();
+                alert('모든 데이터가 삭제되었습니다.');
+            }
+        }
+        
+        // 서버에 데이터 동기화
+        async function syncToServer() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            
+            if (!serverUrl) {
+                alert('서버 주소를 입력해주세요.');
+                return;
+            }
+            
+            if (!serverUrl.startsWith('http://') && !serverUrl.startsWith('https://')) {
+                alert('올바른 서버 주소를 입력해주세요. (예: http://192.168.1.100:5000)');
+                return;
+            }
+            
+            try {
+                const data = loadData();
+                
+                const response = await fetch(`${serverUrl}/api/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ ${result.message}`);
+                    console.log('동기화된 날짜:', result.synced_dates);
+                } else {
+                    alert(`❌ ${result.message}`);
+                }
+                
             } catch (error) {
-                console.error('현황 로드 오류:', error);
+                alert(`❌ 서버 연결 실패: ${error.message}\n\n서버가 실행 중인지 확인해주세요.`);
+                console.error('서버 동기화 오류:', error);
             }
         }
     </script>
