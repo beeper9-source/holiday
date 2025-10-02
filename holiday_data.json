@@ -1,0 +1,25 @@
+{
+  "2024-10-02": {
+    "plans": [],
+    "achievements": [],
+    "rating": 0,
+    "memo": ""
+  },
+  "2025-10-02": {
+    "plans": [
+      {
+        "content": "계획 App 개발",
+        "completed": false,
+        "created_at": "20:46"
+      },
+      {
+        "content": "수내체임버 악보 스캔",
+        "completed": false,
+        "created_at": "20:47"
+      }
+    ],
+    "achievements": [],
+    "rating": 0,
+    "memo": ""
+  }
+}
